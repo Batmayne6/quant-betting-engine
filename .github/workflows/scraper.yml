@@ -1,0 +1,30 @@
+name: Daily EV Scraper
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # 6:00 AM UTC = 8:00 AM CAT
+  workflow_dispatch: # Allows you to click a button to run it manually
+
+jobs:
+  run-scraper:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium
+          playwright install-deps
+          
+      - name: Run Quantitative Engine
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python main.py
