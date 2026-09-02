@@ -1,12 +1,12 @@
-name: Daily EV Scraper
+name: Autonomous Quant Engine
 
 on:
   schedule:
-    - cron: '0 6 * * *' # 6:00 AM UTC = 8:00 AM CAT
-  workflow_dispatch: # Allows you to click a button to run it manually
+    - cron: '0 6 * * *'   # 8:00 AM CAT: Run the Scraper (Find Bets)
+    - cron: '0 22 * * *'  # 12:00 AM CAT: Run the Settler (Grade Bets)
 
 jobs:
-  run-scraper:
+  run-engine:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -21,10 +21,17 @@ jobs:
         run: |
           pip install -r requirements.txt
           playwright install chromium
-          playwright install-deps
           
-      - name: Run Quantitative Engine
+      - name: Run Scraper (Morning)
+        if: github.event.schedule == '0 6 * * *'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: python main.py
+        
+      - name: Run Settler (Night)
+        if: github.event.schedule == '0 22 * * *'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python settler.py
