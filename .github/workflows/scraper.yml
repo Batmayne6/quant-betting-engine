@@ -1,6 +1,7 @@
 name: Autonomous Quant Engine
 
 on:
+  workflow_dispatch:      # Allows you to trigger the scraper manually in GitHub
   schedule:
     - cron: '0 6 * * *'   # 8:00 AM CAT: Run the Scraper (Find Bets)
     - cron: '0 22 * * *'  # 12:00 AM CAT: Run the Settler (Grade Bets)
@@ -8,6 +9,10 @@ on:
 jobs:
   run-engine:
     runs-on: ubuntu-latest
+    # Consolidated environment variables apply to all steps below
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -20,18 +25,12 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install -r requirements.txt
-          playwright install chromium
+          playwright install --with-deps chromium
           
-      - name: Run Scraper (Morning)
-        if: github.event.schedule == '0 6 * * *'
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      - name: Run Scraper (Morning or Manual)
+        if: github.event.schedule == '0 6 * * *' || github.event_name == 'workflow_dispatch'
         run: python main.py
         
       - name: Run Settler (Night)
         if: github.event.schedule == '0 22 * * *'
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: python settler.py
